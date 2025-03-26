@@ -1,7 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.maps.secret) apply false
+
 }
+
+val localProperties = Properties().apply {
+    val propsFile = rootProject.file("local.properties")
+    if (propsFile.exists()) {
+        load(propsFile.inputStream())
+    }
+}
+
+val apiKey = localProperties.getProperty("MAPS_KEY").orEmpty()
 
 android {
     namespace = "com.eminesa.getmylocationapp"
@@ -18,7 +31,13 @@ android {
     }
 
     buildTypes {
+
+        debug {
+            buildConfigField("String", "MAPS_KEY", apiKey)
+        }
         release {
+            buildConfigField("String", "MAPS_KEY", apiKey)
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -33,6 +52,12 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
+
 }
 
 dependencies {
@@ -45,4 +70,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
 }
