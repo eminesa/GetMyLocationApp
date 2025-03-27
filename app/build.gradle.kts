@@ -4,8 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.maps.secret)
-
-}
+    alias(libs.plugins.android.hilt)
+    alias(libs.plugins.kotlin.ksp)
+ }
 
 val localProperties = Properties().apply {
     val propsFile = rootProject.file("local.properties")
@@ -70,6 +71,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    //hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 
     //google maps
     implementation(libs.play.services.maps)

@@ -1,6 +1,6 @@
 [versions]
-agp = "8.5.0"
-kotlin = "1.9.0"
+agp = "8.8.2"
+kotlin = "2.1.10"
 mapsSecres = "2.0.1"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -13,7 +13,8 @@ constraintlayout = "2.2.1"
 playServicesLocation = "21.3.0"
 playServicesMaps = "19.1.0"
 navigationFragment = "2.8.9"
-
+ksp = "2.1.10-1.0.31"
+hiltAndroid = "2.55"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,8 +30,12 @@ androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
+hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 maps-secret = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "mapsSecres" }
+android-hilt = {id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }
+kotlin-ksp = {id = "com.google.devtools.ksp", version.ref = "ksp" }

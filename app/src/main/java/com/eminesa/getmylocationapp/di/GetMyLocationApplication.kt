@@ -1,4 +1,8 @@
 package com.eminesa.getmylocationapp.di
 
-class GetMyLocationApplication {
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+
+@HiltAndroidApp
+class GetMyLocationApplication : Application() {
 }
