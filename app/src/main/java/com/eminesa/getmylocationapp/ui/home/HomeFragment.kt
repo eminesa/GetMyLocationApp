@@ -2,8 +2,6 @@ package com.eminesa.getmylocationapp.ui.home
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.location.Address
-import android.location.Geocoder
 import android.location.Location
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.eminesa.beinconnectclone.ui.base.BaseFragment
 import com.eminesa.getmylocationapp.R
 import com.eminesa.getmylocationapp.databinding.FragmentHomeBinding
+import com.eminesa.getmylocationapp.extention.getNameOfLocation
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -23,7 +22,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 @AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::inflate), OnMapReadyCallback {
@@ -35,15 +33,48 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
         mapFragment?.getMapAsync((this@HomeFragment))
+
         // Konum verisini dinlemek
+        listenLocation()
 
-       /* markerViewModel.locationData.observe(viewLifecycleOwner, Observer { latLng ->
-
-            val address = getNameOfLocation(latLng)
-            markerViewModel.markerManager.addMarker(latLng, address)
-        }) */
-
+        clearTrackClick()
+        startStopFollowClick()
+        //kullanıcı izni almak
         checkLocationPermission()
+    }
+
+    private fun FragmentHomeBinding.clearTrackClick() {
+        clearTrackButton.setOnClickListener {
+            markerViewModel.apply {
+                markerManager.removeAllMarkers()
+                addressList.clear()
+            }
+
+        }
+    }
+
+    private fun FragmentHomeBinding.startStopFollowClick() {
+        stopFollowButton.setOnClickListener {  // Bunu sormak mantıklı olabilir ama şuan zmanım yok
+            if (stopFollowButton.text == getString(R.string.stop_follow)) {
+                markerViewModel.apply {
+                    markerManager.removeAllMarkers()
+                    addressList.clear()
+                    stopFollowButton.text = getString(R.string.start_follow)
+                    stopLocationUpdates()
+                }
+            } else {
+                stopFollowButton.text = getString(R.string.stop_follow)
+                markerViewModel.startLocationUpdates()
+            }
+        }
+    }
+
+    private fun listenLocation() {
+        markerViewModel.apply {
+            locationData.observe(viewLifecycleOwner, Observer { latLng ->
+                val address = latLng.getNameOfLocation(requireContext())
+            })
+        }
     }
 
     private fun checkLocationPermission() {
@@ -90,19 +121,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
             locationTask.addOnSuccessListener { location: Location? ->
                 if (location != null) {
                     val latLng = LatLng(location.latitude, location.longitude)
-
-                    val address = getNameOfLocation(latLng)
-
-                    markerViewModel.markerManager.addMarker(latLng, address)
-
-                    // Haritayı o konumda zoom yapma
+                    // Haritayı o konumda zoom yap
                     googleMap.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(
-                            latLng,
-                            15f
-                        )  // Burada 15f, zoom seviyesini belirtir
+                        CameraUpdateFactory.newLatLngZoom(latLng, 15f)
                     )
-
 
                 } else {
                     Toast.makeText(requireContext(), "Bişeyler ters gitti", Toast.LENGTH_SHORT)
@@ -116,28 +138,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
 
     }
 
-    private fun getNameOfLocation(location: LatLng): String {
-        var locationInfo = "Bu konum için adres bulunamadı "
-        val geocoder = Geocoder(requireContext(), Locale.getDefault())
-
-        val addresses: List<Address>? =
-            geocoder.getFromLocation(location.latitude, location.longitude, 1)
-
-        if (!addresses.isNullOrEmpty()) {
-            val address = addresses[0]
-            val addressLine = address.getAddressLine(0) // Adresin tamamı
-            val city = address.locality // Şehir
-            val country = address.countryName // Ülke
-
-            // Konum bilgilerini kullanıcıya gösterebiliriz
-            locationInfo = "Location: $addressLine, $city, $country"
-
-        }
-        return locationInfo
-    }
 
     override fun onMapReady(map: GoogleMap) {
-
         markerViewModel.markerManager.setMap(map)
         googleMap = map
     }

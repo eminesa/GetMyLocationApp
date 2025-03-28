@@ -2,4 +2,7 @@
     <string name="app_name">GetMyLocationApp</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="stop_follow">Takibi Bırak</string>
+    <string name="start_follow">Takip Et</string>
+    <string name="clear_track">İzleri Sil</string>
 </resources>
