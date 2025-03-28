@@ -2,35 +2,47 @@ package com.eminesa.getmylocationapp.ui.home
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import com.eminesa.beinconnectclone.ui.base.BaseFragment
 import com.eminesa.getmylocationapp.R
 import com.eminesa.getmylocationapp.databinding.FragmentHomeBinding
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.Task
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import java.util.Locale
 
 @AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::inflate), OnMapReadyCallback {
 
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val markerViewModel: MarkerViewModel by viewModels()
+    private lateinit var googleMap: GoogleMap
 
     override fun FragmentHomeBinding.bindScreen() {
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
         mapFragment?.getMapAsync((this@HomeFragment))
+        // Konum verisini dinlemek
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
+       /* markerViewModel.locationData.observe(viewLifecycleOwner, Observer { latLng ->
 
-        // İzin kontrolü ve alma
+            val address = getNameOfLocation(latLng)
+            markerViewModel.markerManager.addMarker(latLng, address)
+        }) */
+
         checkLocationPermission()
     }
 
@@ -70,22 +82,75 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
         ) {
             return
         }
-        val locationTask: Task<Location> = fusedLocationClient.lastLocation
-        locationTask.addOnSuccessListener { location: Location? ->
-            if (location != null) {
-                // Konum başarıyla alındı
-                val latitude = location.latitude
-                val longitude = location.longitude
 
-                Toast.makeText(requireContext(), latitude.toString().plus(longitude.toString()), Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
 
-            } else {
-                // Konum verisi yoksa kullanıcı GPS kapalıysa burada bir uyarı gösterebiliriz.
+            val locationTask: Task<Location> = markerViewModel.fusedLocationClient.lastLocation
+
+            locationTask.addOnSuccessListener { location: Location? ->
+                if (location != null) {
+                    val latLng = LatLng(location.latitude, location.longitude)
+
+                    val address = getNameOfLocation(latLng)
+
+                    markerViewModel.markerManager.addMarker(latLng, address)
+
+                    // Haritayı o konumda zoom yapma
+                    googleMap.moveCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            latLng,
+                            15f
+                        )  // Burada 15f, zoom seviyesini belirtir
+                    )
+
+
+                } else {
+                    Toast.makeText(requireContext(), "Bişeyler ters gitti", Toast.LENGTH_SHORT)
+                        .show()
+
+                    // Konum verisi yoksa kullanıcı GPS kapalıysa burada bir uyarı gösterebiliriz.
+                }
             }
+
         }
+
     }
 
-    override fun onMapReady(p0: GoogleMap) {
-        Toast.makeText(requireContext(), p0.toString(), Toast.LENGTH_SHORT).show()
+    private fun getNameOfLocation(location: LatLng): String {
+        var locationInfo = "Bu konum için adres bulunamadı "
+        val geocoder = Geocoder(requireContext(), Locale.getDefault())
+
+        val addresses: List<Address>? =
+            geocoder.getFromLocation(location.latitude, location.longitude, 1)
+
+        if (!addresses.isNullOrEmpty()) {
+            val address = addresses[0]
+            val addressLine = address.getAddressLine(0) // Adresin tamamı
+            val city = address.locality // Şehir
+            val country = address.countryName // Ülke
+
+            // Konum bilgilerini kullanıcıya gösterebiliriz
+            locationInfo = "Location: $addressLine, $city, $country"
+
+        }
+        return locationInfo
+    }
+
+    override fun onMapReady(map: GoogleMap) {
+
+        markerViewModel.markerManager.setMap(map)
+        googleMap = map
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Konum güncellemelerini başlat
+        markerViewModel.startLocationUpdates()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Konum güncellemelerini durdur
+        markerViewModel.stopLocationUpdates()
     }
 }

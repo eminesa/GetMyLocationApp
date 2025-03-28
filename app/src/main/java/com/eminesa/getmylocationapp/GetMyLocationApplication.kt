@@ -1,4 +1,4 @@
-package com.eminesa.getmylocationapp.di
+package com.eminesa.getmylocationapp
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
