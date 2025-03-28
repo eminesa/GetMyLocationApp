@@ -1,6 +1,5 @@
 package com.eminesa.getmylocationapp.di
 
-import com.google.android.gms.maps.GoogleMap
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

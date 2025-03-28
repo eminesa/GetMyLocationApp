@@ -2,25 +2,24 @@ package com.eminesa.getmylocationapp.ui.home
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.location.Location
-import android.widget.Toast
+import android.health.connect.datatypes.ExerciseRoute.Location
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.eminesa.beinconnectclone.ui.base.BaseFragment
 import com.eminesa.getmylocationapp.R
 import com.eminesa.getmylocationapp.databinding.FragmentHomeBinding
 import com.eminesa.getmylocationapp.extention.getNameOfLocation
+import com.eminesa.getmylocationapp.model.AddressModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.tasks.Task
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -34,6 +33,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
         val mapFragment = childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
         mapFragment?.getMapAsync((this@HomeFragment))
 
+        markerViewModel.collectLocationUpdates()
         // Konum verisini dinlemek
         listenLocation()
 
@@ -49,33 +49,50 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
                 markerManager.removeAllMarkers()
                 addressList.clear()
             }
-
         }
     }
 
     private fun FragmentHomeBinding.startStopFollowClick() {
-        stopFollowButton.setOnClickListener {  // Bunu sormak mantıklı olabilir ama şuan zmanım yok
+        stopFollowButton.setOnClickListener {  // Bunu sormak mantıklı olabilir ama şuan zamanım yok
             if (stopFollowButton.text == getString(R.string.stop_follow)) {
                 markerViewModel.apply {
                     markerManager.removeAllMarkers()
                     addressList.clear()
                     stopFollowButton.text = getString(R.string.start_follow)
-                    stopLocationUpdates()
+                    markerViewModel.locationService.stopService(requireContext())
                 }
             } else {
                 stopFollowButton.text = getString(R.string.stop_follow)
-                markerViewModel.startLocationUpdates()
+                markerViewModel.locationService.startService(requireContext())
             }
         }
     }
 
     private fun listenLocation() {
-        markerViewModel.apply {
-            locationData.observe(viewLifecycleOwner, Observer { latLng ->
-                val address = latLng.getNameOfLocation(requireContext())
-            })
+
+        lifecycleScope.launch {
+            markerViewModel.currentLocation.collect { latLng ->
+                latLng?.let {
+                    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng , 15f))
+                    val nameOfLocation = it.getNameOfLocation(requireContext())
+
+                    //  if (!markerViewModel.addressList.contains(AddressModel(it, nameOfLocation))) {
+                    markerViewModel.markerManager.addMarker(it, nameOfLocation)
+                    markerViewModel.addressList.add(AddressModel(it, nameOfLocation))
+                    //  }
+                }
+            }
         }
+
+
+      /*  lifecycleScope.launch {
+            markerViewModel.locationService.locationFlow.collect { latLng ->
+
+            }
+        } */
     }
+
+
 
     private fun checkLocationPermission() {
         // Konum izni kontrolü
@@ -114,45 +131,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
             return
         }
 
-        lifecycleScope.launch {
-
-            val locationTask: Task<Location> = markerViewModel.fusedLocationClient.lastLocation
-
-            locationTask.addOnSuccessListener { location: Location? ->
-                if (location != null) {
-                    val latLng = LatLng(location.latitude, location.longitude)
-                    // Haritayı o konumda zoom yap
-                    googleMap.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(latLng, 15f)
-                    )
-
-                } else {
-                    Toast.makeText(requireContext(), "Bişeyler ters gitti", Toast.LENGTH_SHORT)
-                        .show()
-
-                    // Konum verisi yoksa kullanıcı GPS kapalıysa burada bir uyarı gösterebiliriz.
-                }
-            }
-
-        }
-
     }
 
 
     override fun onMapReady(map: GoogleMap) {
         markerViewModel.markerManager.setMap(map)
         googleMap = map
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Konum güncellemelerini başlat
-        markerViewModel.startLocationUpdates()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Konum güncellemelerini durdur
-        markerViewModel.stopLocationUpdates()
     }
 }

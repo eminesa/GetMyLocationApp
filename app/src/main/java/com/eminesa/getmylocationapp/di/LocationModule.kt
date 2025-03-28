@@ -1,8 +1,7 @@
 package com.eminesa.getmylocationapp.di
 
 import android.content.Context
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
+import com.eminesa.getmylocationapp.service.LocationService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,13 +11,13 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object LocationModule {
+object LocationServiceModule {
 
     @Provides
     @Singleton
-    fun provideFusedLocationProviderClient(
-        @ApplicationContext context: Context
-    ): FusedLocationProviderClient {
-        return LocationServices.getFusedLocationProviderClient(context)
+    fun provideLocationService(@ApplicationContext context: Context): LocationService {
+        return LocationService().apply {
+            startService(context)
+        }
     }
 }

@@ -1,5 +1,6 @@
 [versions]
 agp = "8.8.2"
+collectionKtx = "1.5.0"
 kotlin = "2.1.10"
 mapsSecres = "2.0.1"
 coreKtx = "1.15.0"
@@ -17,6 +18,7 @@ ksp = "2.1.10-1.0.31"
 hiltAndroid = "2.55"
 
 [libraries]
+androidx-collection-ktx = { module = "androidx.collection:collection-ktx", version.ref = "collectionKtx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-navigation-dynamic-features-fragment = { module = "androidx.navigation:navigation-dynamic-features-fragment", version.ref = "navigationFragment" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

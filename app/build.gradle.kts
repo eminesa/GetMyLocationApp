@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         applicationId = "com.eminesa.getmylocationapp"
-        minSdk = 26
+        minSdk = 27
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -87,4 +87,5 @@ dependencies {
     // Feature module support for Fragments
     implementation(libs.androidx.navigation.dynamic.features.fragment)
 
+    implementation (libs.androidx.collection.ktx)
 }

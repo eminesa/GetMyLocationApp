@@ -5,4 +5,8 @@
     <string name="stop_follow">Takibi Bırak</string>
     <string name="start_follow">Takip Et</string>
     <string name="clear_track">İzleri Sil</string>
+    <string name="location_channel_name">Konum Takibi</string>
+    <string name="location_channel_description">Konum takibi için bildirim kanalı</string>
+    <string name="location_notification_title">Konum Takibi Aktif</string>
+    <string name="location_notification_text">Konumunuz takip ediliyor</string>
 </resources>
