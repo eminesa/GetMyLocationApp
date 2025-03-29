@@ -1,4 +1,4 @@
-package com.eminesa.getmylocationapp.di
+package com.eminesa.getmylocationapp.common
 
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng

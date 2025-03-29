@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.eminesa.getmylocationapp.model.AddressDao
 import com.eminesa.getmylocationapp.repository.AddressRepository
 import com.eminesa.getmylocationapp.common.AddressDatabase
+import com.eminesa.getmylocationapp.common.MarkerManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,5 +31,11 @@ object AppModule {
     @Provides
     fun provideRepository(addressDao: AddressDao): AddressRepository {
         return AddressRepository(addressDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMarkerManager(): MarkerManager {
+        return MarkerManager()
     }
 }

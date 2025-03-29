@@ -78,7 +78,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
                     markerManager.removeAllMarkers()
                     markerViewModel.deleteAddresses()
                     stopFollowButton.text = getString(R.string.start_follow)
-                    markerViewModel.locationRepository.stopService(requireContext())
+                    locationRepository.stopService(requireContext())
                 }
             } else {
                 stopFollowButton.text = getString(R.string.stop_follow)
@@ -144,6 +144,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
             if (!fineLocationGranted || !foregroundServiceGranted) {
                 markerViewModel.locationRepository.startService(requireContext())
             } else {
+
                 Toast.makeText(requireContext(), "Konum izni gerekli!", Toast.LENGTH_SHORT).show()
             }
         }

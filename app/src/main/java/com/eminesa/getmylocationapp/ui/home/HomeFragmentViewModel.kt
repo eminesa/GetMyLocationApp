@@ -2,7 +2,7 @@ package com.eminesa.getmylocationapp.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.eminesa.getmylocationapp.di.MarkerManager
+import com.eminesa.getmylocationapp.common.MarkerManager
 import com.eminesa.getmylocationapp.model.AddressEntity
 import com.eminesa.getmylocationapp.repository.AddressRepository
 import com.eminesa.getmylocationapp.repository.LocationRepository
