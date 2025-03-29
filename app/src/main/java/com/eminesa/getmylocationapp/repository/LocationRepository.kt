@@ -1,4 +1,4 @@
-package com.eminesa.getmylocationapp.common
+package com.eminesa.getmylocationapp.repository
 
 import android.content.Context
 import android.content.Intent

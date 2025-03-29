@@ -13,16 +13,18 @@ import com.eminesa.beinconnectclone.ui.base.BaseFragment
 import com.eminesa.getmylocationapp.R
 import com.eminesa.getmylocationapp.databinding.FragmentHomeBinding
 import com.eminesa.getmylocationapp.extention.getNameOfLocation
-import com.eminesa.getmylocationapp.model.AddressModel
+import com.eminesa.getmylocationapp.model.AddressEntity
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::inflate), OnMapReadyCallback {
+class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::inflate),
+    OnMapReadyCallback {
 
     private val markerViewModel: MarkerViewModel by viewModels()
     private lateinit var googleMap: GoogleMap
@@ -30,10 +32,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun FragmentHomeBinding.bindScreen() {
 
-        val mapFragment = childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
+        val mapFragment =
+            childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
         mapFragment?.getMapAsync((this@HomeFragment))
 
-
+        listenAvailableLocation()
         listenLocation()
 
         clearTrackClick()
@@ -41,11 +44,29 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
         checkLocationPermission()
     }
 
+    private fun listenAvailableLocation() {
+        lifecycleScope.launch {
+            markerViewModel.addresses.collect { addresses ->
+
+                for (address in addresses) {
+                    address.address?.let {
+
+                        markerViewModel.markerManager.addMarker(
+                            LatLng(
+                                address.latitude,
+                                address.longitude
+                            ), it
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     private fun FragmentHomeBinding.clearTrackClick() {
         clearTrackButton.setOnClickListener {
             markerViewModel.apply {
                 markerManager.removeAllMarkers()
-                addressList.clear()
             }
         }
     }
@@ -55,7 +76,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
             if (stopFollowButton.text == getString(R.string.stop_follow)) {
                 markerViewModel.apply {
                     markerManager.removeAllMarkers()
-                    addressList.clear()
+                    markerViewModel.deleteAddresses()
                     stopFollowButton.text = getString(R.string.start_follow)
                     markerViewModel.locationRepository.stopService(requireContext())
                 }
@@ -71,13 +92,17 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
         lifecycleScope.launch {
             markerViewModel.currentLocation.collect { latLng ->
                 latLng?.let {
-                    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng , 15f))
+                    googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
                     val nameOfLocation = it.getNameOfLocation(requireContext())
 
-                    //  if (!markerViewModel.addressList.contains(AddressModel(it, nameOfLocation))) {
                     markerViewModel.markerManager.addMarker(it, nameOfLocation)
-                    markerViewModel.addressList.add(AddressModel(it, nameOfLocation))
-                    //  }
+                    val newAddress = AddressEntity(
+                        latitude = it.latitude,
+                        longitude = it.longitude,
+                        address = nameOfLocation
+                    )
+                    markerViewModel.addAddress(newAddress)
+
                 }
             }
         }

@@ -88,4 +88,9 @@ dependencies {
     implementation(libs.androidx.navigation.dynamic.features.fragment)
 
     implementation (libs.androidx.collection.ktx)
+
+    //Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
 }
