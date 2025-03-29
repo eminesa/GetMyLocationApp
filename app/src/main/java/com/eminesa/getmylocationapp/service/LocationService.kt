@@ -9,8 +9,10 @@ import android.content.Intent
 import android.location.Location
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.eminesa.getmylocationapp.R
+import com.eminesa.getmylocationapp.di.LocationChannel
 import com.eminesa.getmylocationapp.ui.MainActivity
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -30,7 +32,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class LocationService @Inject constructor() : Service() {
+class LocationService : Service() {
+
+    @Inject lateinit var locationChannel: LocationChannel
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -55,14 +59,9 @@ class LocationService @Inject constructor() : Service() {
         context.stopService(intent)
     }
 
-    override fun onCreate() {
-        super.onCreate()
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         createLocationCallback()
-        startLocationUpdates()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         startLocationUpdates()
@@ -91,6 +90,12 @@ class LocationService @Inject constructor() : Service() {
     private fun processNewLocation(newLocation: Location) {
 
         if (lastLocation == null) {
+            serviceScope.launch {
+                //val latLng = LatLng(41.1101, 29.0194) //Martı Ofisi.
+                val latLng = LatLng(newLocation.latitude, newLocation.longitude)
+                locationChannel.sendLocation(latLng)
+                Log.d("LocationService", "Konum güncelleniyor: $latLng")
+            }
             lastLocation = newLocation
             return
         }
@@ -98,16 +103,16 @@ class LocationService @Inject constructor() : Service() {
         val distance = calculateDistance(lastLocation!!, newLocation)
 
         if (distance > minDistanceThreshold) { // 2 metreden küçük değişimleri ihmal et
-            println("Mesafe: $distance metre")
+            Log.d("LocationService", "Mesafe: $distance metre")
 
             serviceScope.launch {
                 val latLng = LatLng(newLocation.latitude, newLocation.longitude)
                 _locationFlow.emit(latLng)
-                println("Konum güncelleniyor: $latLng")
+                Log.d("LocationService", "Konum güncelleniyor: $latLng")
             }
             lastLocation = newLocation //Yalnızca anlamlı bir değişiklik varsa güncelle
         } else {
-            println("Önemsiz konum değişikliği, güncelleme yapılmadı.")
+            Log.d("LocationService", "Önemsiz konum değişikliği, güncelleme yapılmadı.")
         }
     }
 

@@ -8,9 +8,11 @@ import com.eminesa.getmylocationapp.model.AddressModel
 import com.eminesa.getmylocationapp.service.LocationService
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,12 +30,12 @@ class MarkerViewModel @Inject constructor(
     val currentLocation: StateFlow<LatLng?> = _currentLocation.asStateFlow()
 
     init {
-        collectLocationUpdates(locationRepository.locationFlow)
+        collectLocationUpdates()
     }
 
-    private fun collectLocationUpdates(flow: SharedFlow<LatLng?>) {
+    private fun collectLocationUpdates() {
         viewModelScope.launch {
-            flow.collect { newLocation ->
+            locationRepository.locationFlow.collect { newLocation ->
                 _currentLocation.emit(newLocation)
             }
         }

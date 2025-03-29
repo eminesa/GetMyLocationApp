@@ -15,28 +15,34 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-
-    <Button
-        android:id="@+id/clearTrackButton"
-        android:layout_width="120dp"
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="80dp"
-        android:backgroundTint="@color/transparent"
-        android:text="@string/clear_track"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/stopFollowButton"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/transparent"
-        android:text="@string/stop_follow"
-        android:textSize="12sp" />
+        android:padding="8dp"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/clearTrackButton"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:backgroundTint="@color/transparent"
+            android:text="@string/clear_track"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/stopFollowButton"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="7dp"
+            android:backgroundTint="@color/transparent"
+            android:text="@string/stop_follow"
+            android:textSize="12sp" />
+
+    </LinearLayout>
 
 
 </FrameLayout>
