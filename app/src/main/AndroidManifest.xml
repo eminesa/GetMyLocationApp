@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
@@ -30,12 +30,14 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".service.LocationService"
+            android:foregroundServiceType="location" />
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCXO7teMFscnpqLXvqt-FYd5ecBy44yvC0" />
-
+            android:value="${MAPS_KEY}" />
 
     </application>
-
 
 </manifest>

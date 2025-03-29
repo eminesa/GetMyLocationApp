@@ -19,15 +19,17 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class LocationService @Inject constructor() : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -35,15 +37,13 @@ class LocationService @Inject constructor() : Service() {
     private lateinit var locationCallback: LocationCallback
 
     private var lastLocation: Location? = null
-    private val minDistanceThreshold = 10f // 100 metre
+    private val minDistanceThreshold = 30f // 100 metre
 
     private val NOTIFICATION_ID = 1
     private val CHANNEL_ID = "location_channel"
 
-    // Flow ile konum verisini paylaşmak için SharedFlow kullanıyoruz
-    private val _locationFlow = MutableSharedFlow<LatLng>(replay = 1)
-    val locationFlow: SharedFlow<LatLng> = _locationFlow.asSharedFlow()
-
+    private val _locationFlow = MutableStateFlow<LatLng?>(null)
+    val locationFlow: StateFlow<LatLng?> = _locationFlow.asStateFlow()
 
     fun startService(context: Context) {
         val intent = Intent(context, LocationService::class.java)
@@ -59,6 +59,7 @@ class LocationService @Inject constructor() : Service() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         createLocationCallback()
+        startLocationUpdates()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -78,39 +79,54 @@ class LocationService @Inject constructor() : Service() {
     private fun createLocationCallback() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                for (location in locationResult.locations) {
+
+                //  processNewLocation(locationResult.locations.first())
+                locationResult.locations.forEach { location ->
                     processNewLocation(location)
                 }
             }
         }
     }
 
-    private fun processNewLocation(location: Location) {
-        val previousLocation = lastLocation
+    private fun processNewLocation(newLocation: Location) {
 
-        if (previousLocation == null ||
-            calculateDistance(previousLocation, location) >= minDistanceThreshold
-        ) {
+        if (lastLocation == null) {
+            lastLocation = newLocation
+            return
+        }
 
-            lastLocation = location
+        val distance = calculateDistance(lastLocation!!, newLocation)
+
+        if (distance > minDistanceThreshold) { // 2 metreden küçük değişimleri ihmal et
+            println("Mesafe: $distance metre")
+
             serviceScope.launch {
-                val latLng = LatLng(location.latitude, location.longitude)
+                val latLng = LatLng(newLocation.latitude, newLocation.longitude)
                 _locationFlow.emit(latLng)
+                println("Konum güncelleniyor: $latLng")
             }
+            lastLocation = newLocation //Yalnızca anlamlı bir değişiklik varsa güncelle
+        } else {
+            println("Önemsiz konum değişikliği, güncelleme yapılmadı.")
         }
     }
 
-    private fun calculateDistance(previous: Location, current: Location): Float {
-        return previous.distanceTo(current)
+    private fun calculateDistance(previous: Location?, current: Location?): Float {
+        if (previous == null || current == null) return 0f
+
+        val distance = previous.distanceTo(current) // Metre cinsinden mesafe
+
+        // Eğer cihaz sabit duruyorsa ve mesafe çok küçükse, sıfır kabul edelim
+        return if (distance < minDistanceThreshold) 0f else distance
     }
 
     private fun startLocationUpdates() {
         try {
-            val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
-                .setWaitForAccurateLocation(false)
-                .setMinUpdateIntervalMillis(3000)
-                .setMaxUpdateDelayMillis(10000)
-                .build()
+            val locationRequest = LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY, 2000  // 2 saniye aralık
+            ).apply {
+                setMinUpdateDistanceMeters(10f).setMaxUpdateDelayMillis(2000) // 10 metre değişim
+            }.build()
 
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,

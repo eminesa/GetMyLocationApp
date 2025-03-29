@@ -2,9 +2,10 @@ package com.eminesa.getmylocationapp.ui.home
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.health.connect.datatypes.ExerciseRoute.Location
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -18,8 +19,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -28,18 +27,17 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
     private val markerViewModel: MarkerViewModel by viewModels()
     private lateinit var googleMap: GoogleMap
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun FragmentHomeBinding.bindScreen() {
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
         mapFragment?.getMapAsync((this@HomeFragment))
 
-        markerViewModel.collectLocationUpdates()
-        // Konum verisini dinlemek
+
         listenLocation()
 
         clearTrackClick()
         startStopFollowClick()
-        //kullanıcı izni almak
         checkLocationPermission()
     }
 
@@ -59,11 +57,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
                     markerManager.removeAllMarkers()
                     addressList.clear()
                     stopFollowButton.text = getString(R.string.start_follow)
-                    markerViewModel.locationService.stopService(requireContext())
+                    markerViewModel.locationRepository.stopService(requireContext())
                 }
             } else {
                 stopFollowButton.text = getString(R.string.stop_follow)
-                markerViewModel.locationService.startService(requireContext())
+                markerViewModel.locationRepository.startService(requireContext())
             }
         }
     }
@@ -84,58 +82,50 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
             }
         }
 
-
-      /*  lifecycleScope.launch {
-            markerViewModel.locationService.locationFlow.collect { latLng ->
-
-            }
-        } */
     }
-
-
 
     private fun checkLocationPermission() {
-        // Konum izni kontrolü
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED) {
-            // İzin verilmişse, konum al
-            getLastKnownLocation()
+        val permissionsToRequest = mutableListOf(
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14 (API 34)
+            permissionsToRequest.add(Manifest.permission.FOREGROUND_SERVICE_LOCATION)
+        }
+
+        if (permissionsToRequest.all {
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    it
+                ) == PackageManager.PERMISSION_GRANTED
+            }) {
+            markerViewModel.locationRepository.startService(requireContext())
+
         } else {
-            // İzin verilmemişse, izin isteme
-            requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            requestPermissions.launch(permissionsToRequest.toTypedArray())
         }
     }
 
-    // İzin isteme işlemi
-    private val requestPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                // İzin verilmişse, konum al
-                getLastKnownLocation()
+    private val requestPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+            val foregroundServiceGranted =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    permissions[Manifest.permission.FOREGROUND_SERVICE_LOCATION] ?: false
+                } else {
+                    true // Daha düşük Android sürümlerinde bu izin zaten otomatik verilir.
+                }
+
+            if (!fineLocationGranted || !foregroundServiceGranted) {
+                markerViewModel.locationRepository.startService(requireContext())
             } else {
-                // İzin verilmemişse kullanıcıyı bilgilendir // alert
+                Toast.makeText(requireContext(), "Konum izni gerekli!", Toast.LENGTH_SHORT).show()
             }
         }
-
-    private fun getLastKnownLocation() {
-        // Son bilinen konumu al
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-    }
 
 
     override fun onMapReady(map: GoogleMap) {
-        markerViewModel.markerManager.setMap(map)
         googleMap = map
+        markerViewModel.markerManager.setMap(map)
     }
 }
