@@ -78,8 +78,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
         stopFollowButton.setOnClickListener {  // Bunu sormak mantıklı olabilir ama şuan zamanım yok
             if (stopFollowButton.text == getString(R.string.stop_follow)) {
                 markerViewModel.apply {
-                    markerManager.removeAllMarkers()
-                    markerViewModel.deleteAddresses()
                     stopFollowButton.text = getString(R.string.start_follow)
                     locationRepository.stopService(requireContext())
                 }
