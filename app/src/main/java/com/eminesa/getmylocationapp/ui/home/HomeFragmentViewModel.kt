@@ -42,7 +42,7 @@ class MarkerViewModel @Inject constructor(
         }
     }
 
-    private fun loadAddresses() {
+    fun loadAddresses() {
         viewModelScope.launch {
             repository.getAddresses().collect { addressList ->
                 _addresses.value = addressList

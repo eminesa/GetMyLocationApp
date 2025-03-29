@@ -36,6 +36,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
             childFragmentManager.findFragmentById(R.id.map_fragment) as? SupportMapFragment
         mapFragment?.getMapAsync((this@HomeFragment))
 
+        markerViewModel.loadAddresses()
         listenAvailableLocation()
         listenLocation()
 
@@ -67,6 +68,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(FragmentHomeBinding::infl
         clearTrackButton.setOnClickListener {
             markerViewModel.apply {
                 markerManager.removeAllMarkers()
+                markerViewModel.deleteAddresses()
+                locationRepository.stopService(requireContext())
             }
         }
     }
